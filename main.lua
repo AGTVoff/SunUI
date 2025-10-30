@@ -1,21 +1,12 @@
 -- main.lua
-local Library = {}
-local HttpService = game:GetService("HttpService")
+local SunUI = {}
 
--- Charger les modules internes
-local function loadModule(path)
-    return loadstring(game:HttpGet("https://github.com/AGTVoff/SunUI/tree/main/src"))()
-end
+local base = "https://raw.githubusercontent.com/AGTVoff/SunUI/main/src/"
 
-Library.Core = loadModule("core")
-Library.Theme = loadModule("theme")
-Library.Components = loadModule("components")
-Library.Animation = loadModule("animation")
-Library.Logo = loadModule("logo")
+SunUI.Theme = loadstring(game:HttpGet(base .. "theme.lua"))()
+SunUI.Utils = loadstring(game:HttpGet(base .. "utils.lua"))()
+SunUI.Core = loadstring(game:HttpGet(base .. "core.lua"))()
+SunUI.Components = loadstring(game:HttpGet(base .. "components.lua"))()
+SunUI.Window = loadstring(game:HttpGet(base .. "window.lua"))(SunUI)
 
-function Library:CreateWindow(options)
-    return self.Core:CreateWindow(options)
-end
-
-return Library
-
+return SunUI
