@@ -24,13 +24,14 @@ function library:createGui()
     local uistroke = Instance.new("UIStroke", rgbContour)
     uistroke.Thickness = 4
     uistroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    
     local hue = 0
     RunService.Heartbeat:Connect(function(dt)
         hue = (hue + dt * 0.2) % 1
         uistroke.Color = Color3.fromHSV(hue,1,1)
     end)
     
-    -- Generic button
+    -- Méthodes d'ajout d'éléments :
     function library:addButton(parent, text, size, pos, callback)
         local btn = Instance.new("TextButton", parent)
         btn.Size = size
@@ -44,7 +45,6 @@ function library:createGui()
         return btn
     end
     
-    -- Toggle Button
     function library:addToggle(parent, text, size, pos, initial, callback)
         local btn = self:addButton(parent, text, size, pos, function()
             initial.value = not initial.value
@@ -59,7 +59,7 @@ function library:createGui()
         local uic = Instance.new("UICorner", indicator)
         uic.CornerRadius = UDim.new(0, 4)
         
-        -- Update color on toggle
+        -- Mise à jour couleur quand toggle changé
         callback = function(val)
             indicator.BackgroundColor3 = val and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
         end
@@ -67,7 +67,6 @@ function library:createGui()
         return btn
     end
     
-    -- Slider
     function library:addSlider(parent, text, size, pos, min, max, default, callback)
         local label = Instance.new("TextLabel", parent)
         label.Size = UDim2.new(0, 200, 0, 20)
@@ -115,16 +114,15 @@ function library:createGui()
         return callback
     end
     
-    -- Keybind
     function library:addKeybind(parent, label, size, pos, defaultKey, callback)
-        local label = Instance.new("TextLabel", parent)
-        label.Size = size
-        label.Position = pos
-        label.Text = label
-        label.TextColor3 = Color3.fromRGB(255,0,0)
-        label.BackgroundTransparency = 1
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 14
+        local labelObj = Instance.new("TextLabel", parent)
+        labelObj.Size = size
+        labelObj.Position = pos
+        labelObj.Text = label
+        labelObj.TextColor3 = Color3.fromRGB(255,0,0)
+        labelObj.BackgroundTransparency = 1
+        labelObj.Font = Enum.Font.Gotham
+        labelObj.TextSize = 14
         local keybindButton = Instance.new("TextButton", parent)
         keybindButton.Size = UDim2.new(0, 40, 0, 20)
         keybindButton.Position = UDim2.new(0, pos.X.Offset + size.X.Offset + 10, 0, pos.Y.Offset)
@@ -148,7 +146,6 @@ function library:createGui()
         return keybindButton
     end
     
-    -- Selector Mode
     function library:addSelector(parent, label, size, pos, options, defaultIndex, callback)
         local labelTxt=Instance.new("TextLabel", parent)
         labelTxt.Size=size
