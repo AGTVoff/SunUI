@@ -1,5 +1,5 @@
 -- example.lua
-local SunUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/AGTVoff/SunUI/main/main.lua"))()
+local SunUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/AGTVoff/SunUI/refs/heads/main/main.lua"))()
 local Window = SunUI.Window:Create("SunUI Example")
 
 -- Onglet 1
