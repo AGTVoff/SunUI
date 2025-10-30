@@ -74,8 +74,8 @@ function SunUI.Components:MakeCorner(obj)
 end
 
 -- Crée un Tab avec fonctions AddToggle, AddSlider, AddSelector, AddKeyBind
-function SunUI.Components:CreateTab(parent, name, Theme)
-    local Tab = Instance.new("ScrollingFrame", parent)
+function SunUI.Components:CreateTab(parentFrame, name, Theme)
+    local Tab = Instance.new("ScrollingFrame", parentFrame)
     Tab.Name = name
     Tab.Size = UDim2.new(1,0,1,-35)
     Tab.Position = UDim2.new(0,0,0,35)
@@ -263,7 +263,9 @@ function SunUI.Window:Create(title)
     TabBar.BackgroundTransparency=1
 
     local tabs={}
-    function Frame:AddTab(name)
+    local windowObj = {}
+
+    function windowObj:AddTab(name)
         local Tab = SunUI.Components:CreateTab(Frame,name,SunUI.Theme)
         Tab.Visible=false
         table.insert(tabs,Tab)
@@ -288,7 +290,8 @@ function SunUI.Window:Create(title)
         return Tab
     end
 
-    return Frame
+    windowObj.Frame = Frame
+    return windowObj
 end
 
 return SunUI
