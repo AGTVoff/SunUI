@@ -1,297 +1,212 @@
--- SunUI.lua
+-- // SunUI Library by AGTV (inspired by Linoria)
+-- // Single-file library (no dependencies)
+
 local SunUI = {}
+SunUI.__index = SunUI
 
--- ===== Theme =====
-SunUI.Theme = {
-    Background = Color3.fromRGB(15,15,15),
-    Accent = Color3.fromRGB(0,255,120),
-    Text = Color3.fromRGB(255,255,255),
-    CornerRadius = UDim.new(0,10),
-    BorderThickness = 2
-}
+-- // Services
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
-function SunUI.Theme:GetRGBColor(t)
-    local hue = (tick()*100 + t) % 255 / 255
-    return Color3.fromHSV(hue,1,1)
-end
+-- // Core creation
+function SunUI:CreateWindow(config)
+	local window = Instance.new("ScreenGui")
+	window.Name = config.Name or "SunUI Demo"
+	window.ResetOnSpawn = false
+	window.Parent = PlayerGui
 
--- ===== Utils =====
-SunUI.Utils = {}
-function SunUI.Utils:MakeDraggable(frame, dragArea)
-    local UserInputService = game:GetService("UserInputService")
-    local dragging, dragInput, start, startPos
-    dragArea = dragArea or frame
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Name = "Frame"
+	mainFrame.Size = UDim2.new(0, 500, 0, 350)
+	mainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+	mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	mainFrame.BorderSizePixel = 0
+	mainFrame.Parent = window
 
-    local function update(input)
-        local delta = input.Position - start
-        frame.Position = UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,
-                                   startPos.Y.Scale,startPos.Y.Offset+delta.Y)
-    end
+	local title = Instance.new("TextLabel")
+	title.Text = config.Title or "SunUI"
+	title.Size = UDim2.new(1, 0, 0, 30)
+	title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	title.TextColor3 = Color3.new(1, 1, 1)
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = 16
+	title.Parent = mainFrame
 
-    dragArea.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            start = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
+	local tabContainer = Instance.new("Frame")
+	tabContainer.Size = UDim2.new(0, 120, 1, -30)
+	tabContainer.Position = UDim2.new(0, 0, 0, 30)
+	tabContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	tabContainer.Parent = mainFrame
 
-    dragArea.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
+	local contentContainer = Instance.new("Frame")
+	contentContainer.Size = UDim2.new(1, -120, 1, -30)
+	contentContainer.Position = UDim2.new(0, 120, 0, 30)
+	contentContainer.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+	contentContainer.Parent = mainFrame
 
-    UserInputService.InputChanged:Connect(function(input)
-        if input==dragInput and dragging then
-            update(input)
-        end
-    end)
-end
+	local tabs = {}
+	local selectedTab
 
--- ===== Core =====
-SunUI.Core = {}
-function SunUI.Core:Init(name)
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = name or "SunUI"
-    ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    ScreenGui.ResetOnSpawn = false
-    return ScreenGui
-end
+	function SunUI:AddTab(tabName)
+		local tabButton = Instance.new("TextButton")
+		tabButton.Text = tabName
+		tabButton.Size = UDim2.new(1, 0, 0, 35)
+		tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		tabButton.TextColor3 = Color3.new(1, 1, 1)
+		tabButton.Parent = tabContainer
 
--- ===== Components =====
-SunUI.Components = {}
+		local tabFrame = Instance.new("ScrollingFrame")
+		tabFrame.Visible = false
+		tabFrame.Size = UDim2.new(1, -10, 1, -10)
+		tabFrame.Position = UDim2.new(0, 5, 0, 5)
+		tabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+		tabFrame.ScrollBarThickness = 4
+		tabFrame.BackgroundTransparency = 1
+		tabFrame.Parent = contentContainer
 
-function SunUI.Components:MakeCorner(obj)
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0,8)
-    c.Parent = obj
-end
+		local layout = Instance.new("UIListLayout")
+		layout.Padding = UDim.new(0, 8)
+		layout.Parent = tabFrame
 
--- Crée un Tab avec fonctions AddToggle, AddSlider, AddSelector, AddKeyBind
-function SunUI.Components:CreateTab(parentFrame, name, Theme)
-    local Tab = Instance.new("ScrollingFrame", parentFrame)
-    Tab.Name = name
-    Tab.Size = UDim2.new(1,0,1,-35)
-    Tab.Position = UDim2.new(0,0,0,35)
-    Tab.BackgroundTransparency = 1
-    Tab.ScrollBarThickness = 6
-    Tab.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		tabButton.MouseButton1Click:Connect(function()
+			if selectedTab then selectedTab.Visible = false end
+			tabFrame.Visible = true
+			selectedTab = tabFrame
+		end)
 
-    local Layout = Instance.new("UIListLayout",Tab)
-    Layout.SortOrder = Enum.SortOrder.LayoutOrder
-    Layout.Padding = UDim.new(0,8)
+		local tabObj = {}
 
-    -- Toggle
-    function Tab:AddToggle(label, callback)
-        local FrameT = Instance.new("Frame",Tab)
-        FrameT.Size = UDim2.new(1,-20,0,35)
-        FrameT.BackgroundColor3 = Theme.Background
-        SunUI.Components:MakeCorner(FrameT)
+		function tabObj:AddToggle(name, default, callback)
+			local toggle = Instance.new("TextButton")
+			toggle.Size = UDim2.new(1, -10, 0, 30)
+			toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+			toggle.TextColor3 = Color3.new(1, 1, 1)
+			toggle.Text = name .. ": " .. (default and "ON" or "OFF")
+			toggle.Parent = tabFrame
 
-        local Text = Instance.new("TextLabel",FrameT)
-        Text.Size = UDim2.new(1,0,1,0)
-        Text.BackgroundTransparency = 1
-        Text.Text = label..": OFF"
-        Text.TextColor3 = Theme.Text
-        Text.Font = Enum.Font.Gotham
-        Text.TextScaled = true
+			local state = default
 
-        local Btn = Instance.new("TextButton",FrameT)
-        Btn.Size = UDim2.new(1,0,1,0)
-        Btn.BackgroundTransparency = 1
-        local state=false
-        Btn.MouseButton1Click:Connect(function()
-            state = not state
-            Text.Text = label..(state and ": ON" or ": OFF")
-            callback(state)
-        end)
-    end
+			toggle.MouseButton1Click:Connect(function()
+				state = not state
+				toggle.Text = name .. ": " .. (state and "ON" or "OFF")
+				if callback then callback(state) end
+			end)
+		end
 
-    -- Button
-    function Tab:AddButton(label, callback)
-        local Btn = Instance.new("TextButton",Tab)
-        Btn.Size = UDim2.new(1,-20,0,35)
-        Btn.BackgroundColor3 = Theme.Accent
-        Btn.TextColor3 = Theme.Text
-        Btn.Text = label
-        Btn.Font = Enum.Font.GothamBold
-        Btn.TextScaled = true
-        SunUI.Components:MakeCorner(Btn)
-        Btn.MouseButton1Click:Connect(callback)
-    end
+		function tabObj:AddSlider(name, min, max, default, callback)
+			local label = Instance.new("TextLabel")
+			label.Text = name .. ": " .. default
+			label.Size = UDim2.new(1, -10, 0, 25)
+			label.TextColor3 = Color3.new(1, 1, 1)
+			label.BackgroundTransparency = 1
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Parent = tabFrame
 
-    -- Slider
-    function Tab:AddSlider(label,min,max,default,callback)
-        local FrameS = Instance.new("Frame",Tab)
-        FrameS.Size = UDim2.new(1,-20,0,35)
-        FrameS.BackgroundColor3 = Theme.Background
-        SunUI.Components:MakeCorner(FrameS)
+			local sliderFrame = Instance.new("Frame")
+			sliderFrame.Size = UDim2.new(1, -10, 0, 6)
+			sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+			sliderFrame.Parent = tabFrame
 
-        local Bar = Instance.new("Frame",FrameS)
-        Bar.BackgroundColor3 = Theme.Accent
-        SunUI.Components:MakeCorner(Bar)
-        Bar.Size = UDim2.new(default/max,0,1,0)
+			local fill = Instance.new("Frame")
+			fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+			fill.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+			fill.Parent = sliderFrame
 
-        local Label = Instance.new("TextLabel",FrameS)
-        Label.Text = label..": "..default
-        Label.Size = UDim2.new(1,0,1,0)
-        Label.BackgroundTransparency = 1
-        Label.TextColor3 = Theme.Text
-        Label.Font = Enum.Font.Gotham
-        Label.TextScaled = true
+			local dragging = false
 
-        local value = default
-        FrameS.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                local conn
-                conn = game:GetService("UserInputService").InputChanged:Connect(function(i)
-                    if i.UserInputType==Enum.UserInputType.MouseMovement then
-                        local rel = math.clamp((i.Position.X - FrameS.AbsolutePosition.X)/FrameS.AbsoluteSize.X,0,1)
-                        value = math.floor(min + (max-min)*rel)
-                        Bar.Size = UDim2.new(rel,0,1,0)
-                        Label.Text = label..": "..value
-                        callback(value)
-                    end
-                end)
-                input.Changed:Connect(function()
-                    if input.UserInputState==Enum.UserInputState.End then conn:Disconnect() end
-                end)
-            end
-        end)
-    end
+			sliderFrame.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = true
+				end
+			end)
 
-    -- Selector
-    function Tab:AddSelector(label,options,callback)
-        local FrameSel = Instance.new("Frame",Tab)
-        FrameSel.Size = UDim2.new(1,-20,0,35)
-        FrameSel.BackgroundColor3 = Theme.Background
-        SunUI.Components:MakeCorner(FrameSel)
+			sliderFrame.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = false
+				end
+			end)
 
-        local index = 1
-        local Text = Instance.new("TextLabel",FrameSel)
-        Text.Size = UDim2.new(1,0,1,0)
-        Text.BackgroundTransparency = 1
-        Text.Text = label..": "..options[index]
-        Text.TextColor3 = Theme.Text
-        Text.Font = Enum.Font.Gotham
-        Text.TextScaled = true
+			game:GetService("UserInputService").InputChanged:Connect(function(input)
+				if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+					local ratio = math.clamp((input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
+					local value = math.floor(min + (max - min) * ratio)
+					fill.Size = UDim2.new(ratio, 0, 1, 0)
+					label.Text = name .. ": " .. value
+					if callback then callback(value) end
+				end
+			end)
+		end
 
-        local Btn = Instance.new("TextButton",FrameSel)
-        Btn.Size = UDim2.new(1,0,1,0)
-        Btn.BackgroundTransparency = 1
-        Btn.MouseButton1Click:Connect(function()
-            index = index % #options +1
-            Text.Text = label..": "..options[index]
-            callback(options[index])
-        end)
-    end
+		function tabObj:AddDropdown(name, options, callback)
+			local drop = Instance.new("TextButton")
+			drop.Size = UDim2.new(1, -10, 0, 30)
+			drop.TextColor3 = Color3.new(1, 1, 1)
+			drop.Text = name .. " ▼"
+			drop.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+			drop.Parent = tabFrame
 
-    -- KeyBinder
-    function Tab:AddKeyBinder(label,defaultKey,callback)
-        local FrameK = Instance.new("Frame",Tab)
-        FrameK.Size = UDim2.new(1,-20,0,35)
-        FrameK.BackgroundColor3 = Theme.Background
-        SunUI.Components:MakeCorner(FrameK)
+			local open = false
+			local list = Instance.new("Frame")
+			list.Visible = false
+			list.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+			list.Position = UDim2.new(0, 0, 1, 0)
+			list.Size = UDim2.new(1, 0, 0, #options * 25)
+			list.Parent = drop
 
-        local Text = Instance.new("TextLabel",FrameK)
-        Text.Size = UDim2.new(1,0,1,0)
-        Text.BackgroundTransparency = 1
-        Text.Text = label.." ["..defaultKey.Name.."]"
-        Text.TextColor3 = Theme.Text
-        Text.Font = Enum.Font.Gotham
-        Text.TextScaled = true
+			for _, opt in ipairs(options) do
+				local btn = Instance.new("TextButton")
+				btn.Size = UDim2.new(1, 0, 0, 25)
+				btn.Text = opt
+				btn.TextColor3 = Color3.new(1, 1, 1)
+				btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+				btn.Parent = list
 
-        local binding = false
-        local Btn = Instance.new("TextButton",FrameK)
-        Btn.Size = UDim2.new(1,0,1,0)
-        Btn.BackgroundTransparency = 1
-        Btn.MouseButton1Click:Connect(function()
-            Text.Text = label.." [Press Key]"
-            binding = true
-        end)
+				btn.MouseButton1Click:Connect(function()
+					drop.Text = name .. ": " .. opt
+					list.Visible = false
+					open = false
+					if callback then callback(opt) end
+				end)
+			end
 
-        game:GetService("UserInputService").InputBegan:Connect(function(input)
-            if binding and input.UserInputType==Enum.UserInputType.Keyboard then
-                Text.Text = label.." ["..input.KeyCode.Name.."]"
-                callback(input.KeyCode)
-                binding = false
-            end
-        end)
-    end
+			drop.MouseButton1Click:Connect(function()
+				open = not open
+				list.Visible = open
+			end)
+		end
 
-    return Tab
-end
+		function tabObj:AddKeybind(name, default, callback)
+			local keyButton = Instance.new("TextButton")
+			keyButton.Size = UDim2.new(1, -10, 0, 30)
+			keyButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+			keyButton.TextColor3 = Color3.new(1, 1, 1)
+			keyButton.Text = name .. ": " .. default.Name
+			keyButton.Parent = tabFrame
 
--- ===== Window =====
-SunUI.Window = {}
-function SunUI.Window:Create(title)
-    local Gui = SunUI.Core:Init(title)
-    local Frame = Instance.new("Frame",Gui)
-    Frame.Size = UDim2.new(0,500,0,400)
-    Frame.Position = UDim2.new(0.5,-250,0.5,-200)
-    Frame.BackgroundColor3 = SunUI.Theme.Background
-    Frame.BorderSizePixel = 0
-    Instance.new("UICorner",Frame).CornerRadius = SunUI.Theme.CornerRadius
+			local waiting = false
+			keyButton.MouseButton1Click:Connect(function()
+				keyButton.Text = name .. ": ..."
+				waiting = true
+			end)
 
-    local Border = Instance.new("UIStroke",Frame)
-    Border.Thickness = SunUI.Theme.BorderThickness
-    task.spawn(function()
-        while task.wait(0.05) do
-            Border.Color = SunUI.Theme:GetRGBColor(tick())
-        end
-    end)
+			game:GetService("UserInputService").InputBegan:Connect(function(input)
+				if waiting then
+					keyButton.Text = name .. ": " .. input.KeyCode.Name
+					waiting = false
+					if callback then callback(input.KeyCode) end
+				end
+			end)
+		end
 
-    local TitleLabel = Instance.new("TextLabel",Frame)
-    TitleLabel.Size = UDim2.new(1,0,0,35)
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = title
-    TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.TextSize = 20
-    TitleLabel.TextColor3 = SunUI.Theme.Accent
+		table.insert(tabs, tabObj)
+		return tabObj
+	end
 
-    SunUI.Utils:MakeDraggable(Frame,TitleLabel)
-
-    local TabBar = Instance.new("Frame",Frame)
-    TabBar.Size = UDim2.new(1,0,0,35)
-    TabBar.Position = UDim2.new(0,0,0,0)
-    TabBar.BackgroundTransparency=1
-
-    local tabs={}
-    local windowObj = {}
-
-    function windowObj:AddTab(name)
-        local Tab = SunUI.Components:CreateTab(Frame,name,SunUI.Theme)
-        Tab.Visible=false
-        table.insert(tabs,Tab)
-
-        local Btn = Instance.new("TextButton",TabBar)
-        Btn.Size=UDim2.new(0,120,1,0)
-        Btn.Position=UDim2.new(0,(#tabs-1)*125,0,0)
-        Btn.Text=name
-        Btn.Font=Enum.Font.Gotham
-        Btn.TextColor3=SunUI.Theme.Text
-        Btn.TextScaled=true
-        Btn.BackgroundColor3=SunUI.Theme.Background
-        SunUI.Components:MakeCorner(Btn)
-
-        Btn.MouseButton1Click:Connect(function()
-            for i,t in ipairs(tabs) do
-                t.Visible=(t==Tab)
-            end
-        end)
-
-        if #tabs==1 then Tab.Visible=true end
-        return Tab
-    end
-
-    windowObj.Frame = Frame
-    return windowObj
+	return setmetatable({
+		Main = mainFrame,
+		AddTab = SunUI.AddTab
+	}, SunUI)
 end
 
 return SunUI
