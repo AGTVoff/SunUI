@@ -67,7 +67,7 @@ end
 -- ===== Components =====
 SunUI.Components = {}
 
-local function MakeCorner(obj)
+function SunUI.Components:MakeCorner(obj)
     local c = Instance.new("UICorner")
     c.CornerRadius = UDim.new(0, 8)
     c.Parent = obj
@@ -94,7 +94,7 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         Toggle.Text = label .. ": OFF"
         Toggle.Font = Enum.Font.Gotham
         Toggle.TextScaled = true
-        MakeCorner(Toggle)
+        SunUI.Components:MakeCorner(Toggle)
 
         local state = false
         Toggle.MouseButton1Click:Connect(function()
@@ -113,7 +113,7 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         Btn.Text = label
         Btn.Font = Enum.Font.GothamBold
         Btn.TextScaled = true
-        MakeCorner(Btn)
+        SunUI.Components:MakeCorner(Btn)
         Btn.MouseButton1Click:Connect(callback)
     end
 
@@ -122,11 +122,11 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         local FrameS = Instance.new("Frame", Tab)
         FrameS.Size = UDim2.new(1, -20, 0, 35)
         FrameS.BackgroundColor3 = Theme.Background
-        MakeCorner(FrameS)
+        SunUI.Components:MakeCorner(FrameS)
 
         local Bar = Instance.new("Frame", FrameS)
         Bar.BackgroundColor3 = Theme.Accent
-        MakeCorner(Bar)
+        SunUI.Components:MakeCorner(Bar)
         Bar.Size = UDim2.new(default / max, 0, 1, 0)
 
         local Label = Instance.new("TextLabel", FrameS)
@@ -167,7 +167,7 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         Btn.TextColor3 = Theme.Text
         Btn.Font = Enum.Font.Gotham
         Btn.TextScaled = true
-        MakeCorner(Btn)
+        SunUI.Components:MakeCorner(Btn)
 
         local index = 1
         Btn.Text = label .. ": " .. options[index]
@@ -186,7 +186,7 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         Btn.TextColor3 = Theme.Text
         Btn.Font = Enum.Font.Gotham
         Btn.TextScaled = true
-        MakeCorner(Btn)
+        SunUI.Components:MakeCorner(Btn)
 
         local binding = false
         Btn.Text = label .. ": [" .. defaultKey.Name .. "]"
@@ -236,9 +236,40 @@ function SunUI.Window:Create(title)
 
     SunUI.Utils:MakeDraggable(Frame, TitleLabel)
 
+    -- TabBar
+    local TabBar = Instance.new("Frame", Frame)
+    TabBar.Size = UDim2.new(1, 0, 0, 35)
+    TabBar.Position = UDim2.new(0, 0, 0, 0)
+    TabBar.BackgroundTransparency = 1
+
+    local tabs = {}
+
     function Frame:AddTab(name)
-        local tab = SunUI.Components:CreateTab(Frame, name, SunUI.Theme)
-        return tab
+        local Tab = SunUI.Components:CreateTab(Frame, name, SunUI.Theme)
+        Tab.Visible = false
+        table.insert(tabs, Tab)
+
+        local Btn = Instance.new("TextButton", TabBar)
+        Btn.Size = UDim2.new(0, 120, 1, 0)
+        Btn.Position = UDim2.new(0, (#tabs-1)*125, 0, 0)
+        Btn.Text = name
+        Btn.Font = Enum.Font.Gotham
+        Btn.TextColor3 = SunUI.Theme.Text
+        Btn.TextScaled = true
+        Btn.BackgroundColor3 = SunUI.Theme.Background
+        SunUI.Components:MakeCorner(Btn)
+
+        Btn.MouseButton1Click:Connect(function()
+            for i, t in ipairs(tabs) do
+                t.Visible = (t == Tab)
+            end
+        end)
+
+        if #tabs == 1 then
+            Tab.Visible = true
+        end
+
+        return Tab
     end
 
     return Frame
