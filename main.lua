@@ -4,7 +4,7 @@ local HttpService = game:GetService("HttpService")
 
 -- Charger les modules internes
 local function loadModule(path)
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/tonpseudo/MyFluentLib/main/src/"..path..".lua"))()
+    return loadstring(game:HttpGet("https://github.com/AGTVoff/SunUI/tree/main/src"))()
 end
 
 Library.Core = loadModule("core")
@@ -18,3 +18,4 @@ function Library:CreateWindow(options)
 end
 
 return Library
+
