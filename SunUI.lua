@@ -66,12 +66,14 @@ end
 
 -- ===== Components =====
 SunUI.Components = {}
+
 function SunUI.Components:MakeCorner(obj)
     local c = Instance.new("UICorner")
     c.CornerRadius = UDim.new(0,8)
     c.Parent = obj
 end
 
+-- Crée un Tab avec fonctions AddToggle, AddSlider, AddSelector, AddKeyBind
 function SunUI.Components:CreateTab(parent, name, Theme)
     local Tab = Instance.new("ScrollingFrame", parent)
     Tab.Name = name
@@ -87,18 +89,26 @@ function SunUI.Components:CreateTab(parent, name, Theme)
 
     -- Toggle
     function Tab:AddToggle(label, callback)
-        local Toggle = Instance.new("TextButton",Tab)
-        Toggle.Size = UDim2.new(1,-20,0,35)
-        Toggle.BackgroundColor3 = Theme.Background
-        Toggle.TextColor3 = Theme.Text
-        Toggle.Text = label..": OFF"
-        Toggle.Font = Enum.Font.Gotham
-        Toggle.TextScaled = true
-        SunUI.Components:MakeCorner(Toggle)
-        local state = false
-        Toggle.MouseButton1Click:Connect(function()
+        local FrameT = Instance.new("Frame",Tab)
+        FrameT.Size = UDim2.new(1,-20,0,35)
+        FrameT.BackgroundColor3 = Theme.Background
+        SunUI.Components:MakeCorner(FrameT)
+
+        local Text = Instance.new("TextLabel",FrameT)
+        Text.Size = UDim2.new(1,0,1,0)
+        Text.BackgroundTransparency = 1
+        Text.Text = label..": OFF"
+        Text.TextColor3 = Theme.Text
+        Text.Font = Enum.Font.Gotham
+        Text.TextScaled = true
+
+        local Btn = Instance.new("TextButton",FrameT)
+        Btn.Size = UDim2.new(1,0,1,0)
+        Btn.BackgroundTransparency = 1
+        local state=false
+        Btn.MouseButton1Click:Connect(function()
             state = not state
-            Toggle.Text = label..(state and ": ON" or ": OFF")
+            Text.Text = label..(state and ": ON" or ": OFF")
             callback(state)
         end)
     end
@@ -158,44 +168,59 @@ function SunUI.Components:CreateTab(parent, name, Theme)
 
     -- Selector
     function Tab:AddSelector(label,options,callback)
-        local Btn = Instance.new("TextButton",Tab)
-        Btn.Size = UDim2.new(1,-20,0,35)
-        Btn.BackgroundColor3 = Theme.Background
-        Btn.TextColor3 = Theme.Text
-        Btn.Font = Enum.Font.Gotham
-        Btn.TextScaled = true
-        SunUI.Components:MakeCorner(Btn)
+        local FrameSel = Instance.new("Frame",Tab)
+        FrameSel.Size = UDim2.new(1,-20,0,35)
+        FrameSel.BackgroundColor3 = Theme.Background
+        SunUI.Components:MakeCorner(FrameSel)
+
         local index = 1
-        Btn.Text = label..": "..options[index]
+        local Text = Instance.new("TextLabel",FrameSel)
+        Text.Size = UDim2.new(1,0,1,0)
+        Text.BackgroundTransparency = 1
+        Text.Text = label..": "..options[index]
+        Text.TextColor3 = Theme.Text
+        Text.Font = Enum.Font.Gotham
+        Text.TextScaled = true
+
+        local Btn = Instance.new("TextButton",FrameSel)
+        Btn.Size = UDim2.new(1,0,1,0)
+        Btn.BackgroundTransparency = 1
         Btn.MouseButton1Click:Connect(function()
-            index = index % #options + 1
-            Btn.Text = label..": "..options[index]
+            index = index % #options +1
+            Text.Text = label..": "..options[index]
             callback(options[index])
         end)
     end
 
     -- KeyBinder
     function Tab:AddKeyBinder(label,defaultKey,callback)
-        local Btn = Instance.new("TextButton",Tab)
-        Btn.Size = UDim2.new(1,-20,0,35)
-        Btn.BackgroundColor3 = Theme.Background
-        Btn.TextColor3 = Theme.Text
-        Btn.Font = Enum.Font.Gotham
-        Btn.TextScaled = true
-        SunUI.Components:MakeCorner(Btn)
+        local FrameK = Instance.new("Frame",Tab)
+        FrameK.Size = UDim2.new(1,-20,0,35)
+        FrameK.BackgroundColor3 = Theme.Background
+        SunUI.Components:MakeCorner(FrameK)
+
+        local Text = Instance.new("TextLabel",FrameK)
+        Text.Size = UDim2.new(1,0,1,0)
+        Text.BackgroundTransparency = 1
+        Text.Text = label.." ["..defaultKey.Name.."]"
+        Text.TextColor3 = Theme.Text
+        Text.Font = Enum.Font.Gotham
+        Text.TextScaled = true
 
         local binding = false
-        Btn.Text = label.." ["..defaultKey.Name.."]"
+        local Btn = Instance.new("TextButton",FrameK)
+        Btn.Size = UDim2.new(1,0,1,0)
+        Btn.BackgroundTransparency = 1
         Btn.MouseButton1Click:Connect(function()
-            Btn.Text = label.." [Press Key]"
-            binding=true
+            Text.Text = label.." [Press Key]"
+            binding = true
         end)
 
         game:GetService("UserInputService").InputBegan:Connect(function(input)
             if binding and input.UserInputType==Enum.UserInputType.Keyboard then
-                Btn.Text = label.." ["..input.KeyCode.Name.."]"
+                Text.Text = label.." ["..input.KeyCode.Name.."]"
                 callback(input.KeyCode)
-                binding=false
+                binding = false
             end
         end)
     end
@@ -208,8 +233,8 @@ SunUI.Window = {}
 function SunUI.Window:Create(title)
     local Gui = SunUI.Core:Init(title)
     local Frame = Instance.new("Frame",Gui)
-    Frame.Size = UDim2.new(0,500,0,350)
-    Frame.Position = UDim2.new(0.5,-250,0.5,-175)
+    Frame.Size = UDim2.new(0,500,0,400)
+    Frame.Position = UDim2.new(0.5,-250,0.5,-200)
     Frame.BackgroundColor3 = SunUI.Theme.Background
     Frame.BorderSizePixel = 0
     Instance.new("UICorner",Frame).CornerRadius = SunUI.Theme.CornerRadius
