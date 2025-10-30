@@ -17,7 +17,6 @@ end
 
 -- ===== Utils =====
 SunUI.Utils = {}
-
 function SunUI.Utils:MakeDraggable(frame, dragArea)
     local UserInputService = game:GetService("UserInputService")
     local dragging, dragInput, start, startPos
@@ -82,16 +81,20 @@ function SunUI.Components:CreateTab(parent, name, Theme)
     Tab.BackgroundTransparency = 1
 
     local Layout = Instance.new("UIListLayout", Tab)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
     Layout.Padding = UDim.new(0, 10)
+    Layout.FillDirection = Enum.FillDirection.Vertical
 
+    -- Toggle
     function Tab:AddToggle(label, callback)
         local Toggle = Instance.new("TextButton", Tab)
-        Toggle.Text = label .. ": OFF"
+        Toggle.Size = UDim2.new(1, -20, 0, 35)
         Toggle.BackgroundColor3 = Theme.Background
         Toggle.TextColor3 = Theme.Text
-        MakeCorner(Toggle)
+        Toggle.Text = label .. ": OFF"
         Toggle.Font = Enum.Font.Gotham
         Toggle.TextScaled = true
+        MakeCorner(Toggle)
 
         local state = false
         Toggle.MouseButton1Click:Connect(function()
@@ -101,20 +104,23 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         end)
     end
 
+    -- Button
     function Tab:AddButton(label, callback)
         local Btn = Instance.new("TextButton", Tab)
-        Btn.Text = label
+        Btn.Size = UDim2.new(1, -20, 0, 35)
         Btn.BackgroundColor3 = Theme.Accent
         Btn.TextColor3 = Theme.Text
-        MakeCorner(Btn)
-        Btn.Font = Enum.Font.Gotham
+        Btn.Text = label
+        Btn.Font = Enum.Font.GothamBold
         Btn.TextScaled = true
+        MakeCorner(Btn)
         Btn.MouseButton1Click:Connect(callback)
     end
 
+    -- Slider
     function Tab:AddSlider(label, min, max, default, callback)
         local FrameS = Instance.new("Frame", Tab)
-        FrameS.Size = UDim2.new(0, 400, 0, 30)
+        FrameS.Size = UDim2.new(1, -20, 0, 35)
         FrameS.BackgroundColor3 = Theme.Background
         MakeCorner(FrameS)
 
@@ -153,16 +159,18 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         end)
     end
 
+    -- Selector
     function Tab:AddSelector(label, options, callback)
         local Btn = Instance.new("TextButton", Tab)
-        Btn.Text = label .. ": " .. options[1]
+        Btn.Size = UDim2.new(1, -20, 0, 35)
         Btn.BackgroundColor3 = Theme.Background
         Btn.TextColor3 = Theme.Text
-        MakeCorner(Btn)
         Btn.Font = Enum.Font.Gotham
         Btn.TextScaled = true
+        MakeCorner(Btn)
 
         local index = 1
+        Btn.Text = label .. ": " .. options[index]
         Btn.MouseButton1Click:Connect(function()
             index = index % #options + 1
             Btn.Text = label .. ": " .. options[index]
@@ -170,22 +178,24 @@ function SunUI.Components:CreateTab(parent, name, Theme)
         end)
     end
 
+    -- KeyBinder
     function Tab:AddKeyBinder(label, defaultKey, callback)
         local Btn = Instance.new("TextButton", Tab)
-        Btn.Text = label .. ": [" .. defaultKey.Name .. "]"
+        Btn.Size = UDim2.new(1, -20, 0, 35)
         Btn.BackgroundColor3 = Theme.Background
         Btn.TextColor3 = Theme.Text
-        MakeCorner(Btn)
         Btn.Font = Enum.Font.Gotham
         Btn.TextScaled = true
+        MakeCorner(Btn)
 
         local binding = false
+        Btn.Text = label .. ": [" .. defaultKey.Name .. "]"
         Btn.MouseButton1Click:Connect(function()
             Btn.Text = label .. ": [Press Key]"
             binding = true
         end)
 
-        game:GetService("UserInputService").InputBegan:Connect(function(input, processed)
+        game:GetService("UserInputService").InputBegan:Connect(function(input)
             if binding and input.UserInputType == Enum.UserInputType.Keyboard then
                 Btn.Text = label .. ": [" .. input.KeyCode.Name .. "]"
                 callback(input.KeyCode)
