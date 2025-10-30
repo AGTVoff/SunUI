@@ -1,283 +1,189 @@
--- // SunUI Library by AGTV (Stylish Fluent-Inspired UI)
--- // Single file, no dependencies
-
-local SunUI = {}
-SunUI.__index = SunUI
-
--- Services
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local library = {}
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+function library:createGui()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ThemeGUI"
+    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    
+    local frame = Instance.new("Frame", screenGui)
+    frame.Size = UDim2.new(0, 400, 0, 300)
+    frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+    frame.AnchorPoint = Vector2.new(0.5, 0.5)
+    frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    frame.BorderSizePixel = 0
+    local corner = Instance.new("UICorner", frame)
+    corner.CornerRadius = UDim.new(0, 12)
+    
+    -- Contour RGB animé
+    local rgbContour = Instance.new("Frame", frame)
+    rgbContour.Size = UDim2.new(1, 8, 1, 8)
+    rgbContour.Position = UDim2.new(0, -4, 0, -4)
+    rgbContour.BackgroundTransparency = 1
+    local uistroke = Instance.new("UIStroke", rgbContour)
+    uistroke.Thickness = 4
+    uistroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    local hue = 0
+    RunService.Heartbeat:Connect(function(dt)
+        hue = (hue + dt * 0.2) % 1
+        uistroke.Color = Color3.fromHSV(hue,1,1)
+    end)
+    
+    -- Generic button
+    function library:addButton(parent, text, size, pos, callback)
+        local btn = Instance.new("TextButton", parent)
+        btn.Size = size
+        btn.Position = pos
+        btn.Text = text
+        btn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+        btn.TextColor3 = Color3.new(1,1,1)
+        local corner = Instance.new("UICorner", btn)
+        corner.CornerRadius = UDim.new(0, 8)
+        btn.MouseButton1Click:Connect(callback)
+        return btn
+    end
+    
+    -- Toggle Button
+    function library:addToggle(parent, text, size, pos, initial, callback)
+        local btn = self:addButton(parent, text, size, pos, function()
+            initial.value = not initial.value
+            callback(initial.value)
+        end)
+        
+        local indicator = Instance.new("Frame", btn)
+        indicator.Size = UDim2.new(0, 20, 0, 20)
+        indicator.Position = UDim2.new(1, -25, 0.5, -10)
+        indicator.BackgroundColor3 = initial.value and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
+        indicator.BorderSizePixel = 0
+        local uic = Instance.new("UICorner", indicator)
+        uic.CornerRadius = UDim.new(0, 4)
+        
+        -- Update color on toggle
+        callback = function(val)
+            indicator.BackgroundColor3 = val and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
+        end
+        
+        return btn
+    end
+    
+    -- Slider
+    function library:addSlider(parent, text, size, pos, min, max, default, callback)
+        local label = Instance.new("TextLabel", parent)
+        label.Size = UDim2.new(0, 200, 0, 20)
+        label.Position = pos
+        label.Text = text .. ": " .. tostring(default)
+        label.TextColor3 = Color3.new(1,0,0)
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 14
+        
+        local sliderFrame = Instance.new("Frame", parent)
+        sliderFrame.Size = UDim2.new(0, size.X.Offset, 0, 14)
+        sliderFrame.Position = UDim2.new(0, pos.X.Offset, 0, pos.Y.Offset + 20)
+        sliderFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+        local corner = Instance.new("UICorner", sliderFrame)
+        corner.CornerRadius = UDim.new(0, 7)
+        local sliderIndicator = Instance.new("Frame", sliderFrame)
+        sliderIndicator.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
+        sliderIndicator.BackgroundColor3 = Color3.fromRGB(200,0,0)
+        local corner2 = Instance.new("UICorner", sliderIndicator)
+        corner2.CornerRadius = UDim.new(0, 7)
+        
+        local dragging = false
+        sliderFrame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+            end
+        end)
+        sliderFrame.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        sliderFrame.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local relX = math.clamp(input.Position.X - sliderFrame.AbsolutePosition.X,0,sliderFrame.AbsoluteSize.X)
+                local perc = relX / sliderFrame.AbsoluteSize.X
+                local val = min + perc * (max - min)
+                local displayVal = math.floor(val * 100)/100
+                label.Text = text .. ": " .. tostring(displayVal)
+                sliderIndicator.Size = UDim2.new(perc, 0, 1, 0)
+                callback(displayVal)
+            end
+        end)
+        return callback
+    end
+    
+    -- Keybind
+    function library:addKeybind(parent, label, size, pos, defaultKey, callback)
+        local label = Instance.new("TextLabel", parent)
+        label.Size = size
+        label.Position = pos
+        label.Text = label
+        label.TextColor3 = Color3.fromRGB(255,0,0)
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 14
+        local keybindButton = Instance.new("TextButton", parent)
+        keybindButton.Size = UDim2.new(0, 40, 0, 20)
+        keybindButton.Position = UDim2.new(0, pos.X.Offset + size.X.Offset + 10, 0, pos.Y.Offset)
+        keybindButton.Text = tostring(defaultKey.Name)
+        keybindButton.BackgroundColor3 = Color3.fromRGB(50,0,0)
+        keybindButton.TextColor3 = Color3.new(1,1,1)
+        keybindButton.Font = Enum.Font.Gotham
+        keybindButton.TextSize = 14
+        local listening = false
+        keybindButton.MouseButton1Click:Connect(function()
+            listening = true
+            keybindButton.Text = "Press..."
+        end)
+        game:GetService("UserInputService").InputBegan:Connect(function(input, gp)
+            if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+                callback(input.KeyCode)
+                keybindButton.Text = tostring(input.KeyCode.Name)
+                listening = false
+            end
+        end)
+        return keybindButton
+    end
+    
+    -- Selector Mode
+    function library:addSelector(parent, label, size, pos, options, defaultIndex, callback)
+        local labelTxt=Instance.new("TextLabel", parent)
+        labelTxt.Size=size
+        labelTxt.Position=pos
+        labelTxt.Text=label
+        labelTxt.TextColor3=Color3.fromRGB(255,0,0)
+        labelTxt.BackgroundTransparency=1
+        labelTxt.Font=Enum.Font.Gotham
+        labelTxt.TextSize=14
+        local sel = Instance.new("TextButton", parent)
+        sel.Size=size
+        sel.Position=UDim2.new(pos.X.Scale, pos.X.Offset + size.X.Offset + 10, pos.Y.Scale, pos.Y.Offset)
+        sel.Text=options[defaultIndex]
+        sel.BackgroundColor3=Color3.fromRGB(50,0,0)
+        sel.TextColor3=Color3.White
+        sel.Font=Enum.Font.Gotham
+        sel.TextSize=14
+        local index=defaultIndex
+        sel.MouseButton1Click:Connect(function()
+            index= index%#options +1
+            sel.Text= options[index]
+            callback(options[index])
+        end)
+        return sel
+    end
 
--- Tween helper
-local function Tween(obj, prop, goal, time)
-	game:GetService("TweenService"):Create(obj, TweenInfo.new(time or 0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {[prop] = goal}):Play()
+    return {
+        gui=screenGui,
+        frame=frame,
+        addButton=library.addButton,
+        addToggle=library.addToggle,
+        addSlider=library.addSlider,
+        addKeybind=library.addKeybind,
+        addSelector=library.addSelector,
+    }
 end
 
--- Draggable helper
-local function MakeDraggable(frame)
-	local dragging = false
-	local dragInput, dragStart, startPos
-
-	frame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-			dragStart = input.Position
-			startPos = frame.Position
-
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
-		end
-	end)
-
-	frame.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			dragInput = input
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
-			local delta = input.Position - dragStart
-			frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		end
-	end)
-end
-
--- // Create Window
-function SunUI:CreateWindow(config)
-	local window = Instance.new("ScreenGui")
-	window.Name = config.Name or "SunUI"
-	window.ResetOnSpawn = false
-	window.Parent = PlayerGui
-
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0, 520, 0, 360)
-	frame.Position = UDim2.new(0.5, -260, 0.5, -180)
-	frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-	frame.BorderSizePixel = 0
-	frame.Parent = window
-
-	MakeDraggable(frame)
-
-	-- RGB outline
-	local outline = Instance.new("UIStroke")
-	outline.Thickness = 2
-	outline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	outline.Parent = frame
-
-	local hue = 0
-	RunService.RenderStepped:Connect(function(dt)
-		hue = (hue + dt * 0.2) % 1
-		outline.Color = Color3.fromHSV(hue, 1, 1)
-	end)
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = frame
-
-	local title = Instance.new("TextLabel")
-	title.Text = config.Title or "SunUI"
-	title.Size = UDim2.new(1, 0, 0, 40)
-	title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-	title.TextColor3 = Color3.new(1, 1, 1)
-	title.Font = Enum.Font.GothamBold
-	title.TextSize = 18
-	title.Parent = frame
-
-	local tabsFrame = Instance.new("Frame")
-	tabsFrame.Size = UDim2.new(0, 120, 1, -40)
-	tabsFrame.Position = UDim2.new(0, 0, 0, 40)
-	tabsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-	tabsFrame.Parent = frame
-
-	local tabCorner = Instance.new("UICorner")
-	tabCorner.CornerRadius = UDim.new(0, 12)
-	tabCorner.Parent = tabsFrame
-
-	local content = Instance.new("Frame")
-	content.Size = UDim2.new(1, -130, 1, -40)
-	content.Position = UDim2.new(0, 130, 0, 40)
-	content.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-	content.Parent = frame
-
-	local contentCorner = Instance.new("UICorner")
-	contentCorner.CornerRadius = UDim.new(0, 12)
-	contentCorner.Parent = content
-
-	local selectedTab
-	local tabs = {}
-
-	function SunUI:AddTab(tabName)
-		local tabBtn = Instance.new("TextButton")
-		tabBtn.Text = tabName
-		tabBtn.Size = UDim2.new(1, 0, 0, 35)
-		tabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-		tabBtn.TextColor3 = Color3.new(1, 1, 1)
-		tabBtn.Font = Enum.Font.Gotham
-		tabBtn.TextSize = 14
-		tabBtn.Parent = tabsFrame
-
-		local tabFrame = Instance.new("ScrollingFrame")
-		tabFrame.Visible = false
-		tabFrame.Size = UDim2.new(1, -10, 1, -10)
-		tabFrame.Position = UDim2.new(0, 5, 0, 5)
-		tabFrame.BackgroundTransparency = 1
-		tabFrame.ScrollBarThickness = 5
-		tabFrame.Parent = content
-
-		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 8)
-		layout.Parent = tabFrame
-
-		tabBtn.MouseButton1Click:Connect(function()
-			if selectedTab then selectedTab.Visible = false end
-			tabFrame.Visible = true
-			selectedTab = tabFrame
-			for _, b in ipairs(tabsFrame:GetChildren()) do
-				if b:IsA("TextButton") then
-					Tween(b, "BackgroundColor3", Color3.fromRGB(30, 30, 30), 0.2)
-				end
-			end
-			Tween(tabBtn, "BackgroundColor3", Color3.fromRGB(255, 140, 0), 0.2)
-		end)
-
-		-- Elements
-		local tabObj = {}
-
-		function tabObj:AddToggle(name, default, callback)
-			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(1, -10, 0, 30)
-			btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-			btn.TextColor3 = Color3.new(1, 1, 1)
-			btn.Font = Enum.Font.Gotham
-			btn.TextSize = 14
-			btn.Text = name .. ": " .. (default and "ON" or "OFF")
-			btn.Parent = tabFrame
-
-			local state = default
-			btn.MouseButton1Click:Connect(function()
-				state = not state
-				btn.Text = name .. ": " .. (state and "ON" or "OFF")
-				Tween(btn, "BackgroundColor3", state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(40, 40, 40), 0.2)
-				if callback then callback(state) end
-			end)
-		end
-
-		function tabObj:AddSlider(name, min, max, default, callback)
-			local label = Instance.new("TextLabel")
-			label.Size = UDim2.new(1, -10, 0, 25)
-			label.BackgroundTransparency = 1
-			label.Text = name .. ": " .. default
-			label.TextColor3 = Color3.new(1, 1, 1)
-			label.Font = Enum.Font.Gotham
-			label.TextSize = 14
-			label.TextXAlignment = Enum.TextXAlignment.Left
-			label.Parent = tabFrame
-
-			local bar = Instance.new("Frame")
-			bar.Size = UDim2.new(1, -10, 0, 6)
-			bar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-			bar.Parent = tabFrame
-
-			local fill = Instance.new("Frame")
-			fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-			fill.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-			fill.Parent = bar
-
-			local dragging = false
-			bar.InputBegan:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
-			end)
-			bar.InputEnded:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-			end)
-
-			UserInputService.InputChanged:Connect(function(i)
-				if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-					local ratio = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-					local val = math.floor(min + (max - min) * ratio)
-					fill.Size = UDim2.new(ratio, 0, 1, 0)
-					label.Text = name .. ": " .. val
-					if callback then callback(val) end
-				end
-			end)
-		end
-
-		function tabObj:AddDropdown(name, options, callback)
-			local drop = Instance.new("TextButton")
-			drop.Size = UDim2.new(1, -10, 0, 30)
-			drop.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-			drop.TextColor3 = Color3.new(1, 1, 1)
-			drop.Font = Enum.Font.Gotham
-			drop.TextSize = 14
-			drop.Text = name .. " ▼"
-			drop.Parent = tabFrame
-
-			local list = Instance.new("Frame")
-			list.Size = UDim2.new(1, 0, 0, #options * 25)
-			list.Position = UDim2.new(0, 0, 1, 0)
-			list.Visible = false
-			list.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-			list.Parent = drop
-
-			for _, opt in ipairs(options) do
-				local o = Instance.new("TextButton")
-				o.Size = UDim2.new(1, 0, 0, 25)
-				o.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-				o.TextColor3 = Color3.new(1, 1, 1)
-				o.Text = opt
-				o.Font = Enum.Font.Gotham
-				o.TextSize = 14
-				o.Parent = list
-				o.MouseButton1Click:Connect(function()
-					drop.Text = name .. ": " .. opt
-					list.Visible = false
-					if callback then callback(opt) end
-				end)
-			end
-
-			drop.MouseButton1Click:Connect(function()
-				list.Visible = not list.Visible
-			end)
-		end
-
-		function tabObj:AddKeybind(name, default, callback)
-			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(1, -10, 0, 30)
-			btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-			btn.TextColor3 = Color3.new(1, 1, 1)
-			btn.Font = Enum.Font.Gotham
-			btn.TextSize = 14
-			btn.Text = name .. ": " .. default.Name
-			btn.Parent = tabFrame
-
-			local waiting = false
-			btn.MouseButton1Click:Connect(function()
-				btn.Text = name .. ": ..."
-				waiting = true
-			end)
-
-			UserInputService.InputBegan:Connect(function(i)
-				if waiting then
-					waiting = false
-					btn.Text = name .. ": " .. i.KeyCode.Name
-					if callback then callback(i.KeyCode) end
-				end
-			end)
-		end
-
-		table.insert(tabs, tabObj)
-		return tabObj
-	end
-
-	return setmetatable({AddTab = SunUI.AddTab}, SunUI)
-end
-
-return SunUI
+return library
